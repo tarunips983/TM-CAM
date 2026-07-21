@@ -386,6 +386,8 @@ const cleanAmount =
           page_no: pageNo || null,
           remarks: remarks || null,
           high_value_spares: highValueSpares || null,
+          last_updated_by: req.user?.name || req.user?.email || null,
+          last_updated_at: new Date().toISOString(),
         };
 
         if (newPdfUrl) updatePayload.pdf_url = newPdfUrl;
@@ -423,6 +425,8 @@ const cleanAmount =
         page_no: pageNo || null,
         remarks: remarks || null,
         high_value_spares: highValueSpares || null,
+        last_updated_by: req.user?.name || req.user?.email || null,
+        last_updated_at: new Date().toISOString(),
       };
 
       const { data, error } = await supabase
