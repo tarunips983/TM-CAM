@@ -15,12 +15,15 @@ const pdf = require("pdf-parse");
 import Tesseract from "tesseract.js";
 import fetch from "node-fetch";
 import * as cheerio from "cheerio";
-import { connectMongo } from "./mongodb.js";
+import { ObjectId } from "mongodb";
+import { connectMongo, getBucket } from "./mongodb.js";
+import { uploadBuffer, deleteFile as deleteMongoFile } from "./helpers/gridfs.js";
 
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const app = express();
+app.set("trust proxy", 1);
 await connectMongo();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -179,7 +182,7 @@ function authenticateToken(req, res, next) {
 }
 
 // ---------------------------------------------
-// MULTER MEMORY STORAGE (for Supabase upload)
+// MULTER MEMORY STORAGE (for uploads)
 // ---------------------------------------------
 const uploadInMemory = multer({ storage: multer.memoryStorage() });
 
@@ -264,12 +267,51 @@ app.get("/records/trash", authenticateToken, async (req, res) => {
 });
 
 // ---------------------------------------------------------
-// PDF UPLOAD to Supabase Storage (replaces Cloudinary + JSON)
+// PDF UPLOAD to MongoDB GridFS
 // ---------------------------------------------------------
-// ---------------------------------------------------------
-// PDF UPLOAD to Supabase Storage
-// ---------------------------------------------------------
-const PDF_BUCKET = "pdfs";
+const PDF_ROUTE_PREFIX = "/files";
+
+function isPdfFile(file) {
+  const mime = (file?.mimetype || "").toLowerCase();
+  const ext = path.extname(file?.originalname || "").toLowerCase();
+  return mime === "application/pdf" || ext === ".pdf";
+}
+
+function mongoFileUrl(req, fileId) {
+  const protocol = req.get("x-forwarded-proto")?.split(",")[0] || req.protocol;
+  return `${protocol}://${req.get("host")}${PDF_ROUTE_PREFIX}/${fileId}`;
+}
+
+function extractMongoFileId(value) {
+  const raw = String(value || "").split(`${PDF_ROUTE_PREFIX}/`).pop();
+  return ObjectId.isValid(raw) ? raw : null;
+}
+
+async function safeDeleteMongoFile(value) {
+  const fileId = extractMongoFileId(value);
+  if (fileId) await deleteMongoFile(fileId);
+}
+
+app.get(`${PDF_ROUTE_PREFIX}/:id`, async (req, res) => {
+  try {
+    const bucket = getBucket();
+    const fileId = extractMongoFileId(req.params.id);
+    if (!fileId) return res.status(400).json({ error: "Invalid file id" });
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", "inline");
+
+    bucket.openDownloadStream(new ObjectId(fileId))
+      .on("error", (err) => {
+        console.error("MongoDB file download error:", err);
+        if (!res.headersSent) res.status(404).json({ error: "File not found" });
+      })
+      .pipe(res);
+  } catch (err) {
+    console.error("GET /files/:id error:", err);
+    if (!res.headersSent) res.status(400).json({ error: "Invalid file id" });
+  }
+});
 
 app.post(
   "/upload",
@@ -311,24 +353,12 @@ const cleanAmount =
       if (req.files && req.files.length > 0) {
         const file = req.files[0];
 
-        const ext = path.extname(file.originalname) || ".pdf";
-        const uniqueName =
-          Date.now() + "_" + Math.random().toString(36).slice(2) + ext;
-
-        const { data: uploadData, error: uploadError } =
-          await supabase.storage.from(PDF_BUCKET).upload(uniqueName, file.buffer, {
-            contentType: file.mimetype || "application/pdf",
-            upsert: false,
-          });
-
-        if (uploadError) {
-          console.error("Upload Error:", uploadError);
-          return res.status(500).json({ error: "Failed to upload PDF" });
+        if (!isPdfFile(file)) {
+          return res.status(400).json({ error: "Only PDF files can be uploaded" });
         }
 
-        newPdfUrl = supabase.storage
-          .from(PDF_BUCKET)
-          .getPublicUrl(uploadData.path).data.publicUrl;
+        const fileId = await uploadBuffer(file);
+        newPdfUrl = mongoFileUrl(req, fileId);
       }
 
       const finalPdfUrl = newPdfUrl || pdfPath || null;
@@ -460,19 +490,12 @@ app.delete("/records/trash/:id", authenticateToken, async (req, res) => {
     if (error && error.code !== "PGRST116") throw error;
     if (!data) return res.status(404).json({ error: "Not found" });
 
-    // 2. If PDF exists, delete from storage
+    // 2. If PDF exists in MongoDB GridFS, delete it
     if (data.pdf_url) {
       try {
-        const urlObj = new URL(data.pdf_url);
-        const idx = urlObj.pathname.indexOf(`/object/public/${PDF_BUCKET}/`);
-        if (idx !== -1) {
-          const relativePath = urlObj.pathname.substring(
-            idx + `/object/public/${PDF_BUCKET}/`.length
-          );
-          await supabase.storage.from(PDF_BUCKET).remove([relativePath]);
-        }
-      } catch (parseErr) {
-        console.warn("Failed to parse PDF URL for delete:", parseErr);
+        await safeDeleteMongoFile(data.pdf_url);
+      } catch (deleteErr) {
+        console.warn("Failed to delete MongoDB PDF:", deleteErr);
       }
     }
 
@@ -1206,27 +1229,17 @@ app.post(
       const results = [];
 
       for (const file of req.files) {
-        const ext = path.extname(file.originalname);
-        const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`;
-        const storagePath = `uploads/${fileName}`;
+        if (!isPdfFile(file)) {
+          return res.status(400).json({ error: "File Transfer accepts PDF files only" });
+        }
 
-        const { error } = await supabase.storage
-          .from("file-transfer")
-          .upload(storagePath, file.buffer, {
-            contentType: file.mimetype
-          });
-
-        if (error) throw error;
-
-        const fileUrl = supabase.storage
-          .from("file-transfer")
-          .getPublicUrl(storagePath).data.publicUrl;
-
+        const fileId = await uploadBuffer(file);
+        const fileUrl = mongoFileUrl(req, fileId);
         const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
 
         await supabase.from("file_transfers").insert({
           file_name: file.originalname,
-          file_path: storagePath,
+          file_path: fileId,
           file_url: fileUrl,
           file_size: file.size,
           uploaded_by: req.user.email,
@@ -1279,9 +1292,7 @@ app.delete(
         return res.status(404).json({ error: "File not found" });
       }
 
-      await supabase.storage
-        .from("file-transfer")
-        .remove([data.file_path]);
+      await safeDeleteMongoFile(data.file_path);
 
       await supabase
         .from("file_transfers")
@@ -1303,9 +1314,7 @@ cron.schedule("0 * * * *", async () => {
     .lt("expires_at", now);
 
   for (const file of data || []) {
-    await supabase.storage
-      .from("file-transfer")
-      .remove([file.file_path]);
+    await safeDeleteMongoFile(file.file_path);
 
     await supabase
       .from("file_transfers")
