@@ -3340,9 +3340,9 @@ header, main, section, .container, .right-panel, #pdf-grid-wrapper { min-width: 
     <div class="drop-icon">📤</div>
     <p class="drop-text">
       Drag & drop files here <br>
-      <span>or click to browse</span>
+      <span>or click to browse PDF files</span>
     </p>
-    <input type="file" id="fileInput" hidden multiple>
+    <input type="file" id="fileInput" accept="application/pdf,.pdf" hidden multiple>
   </div>
 
   <div id="uploadPreview" class="upload-preview" style="display:none; flex-direction:column; gap:8px;">
@@ -3546,6 +3546,31 @@ header, main, section, .container, .right-panel, #pdf-grid-wrapper { min-width: 
     </div>
   </div>
 </div>
+<div id="recordEditorModal" class="details-modal">
+  <div class="details-box" style="max-width:760px;">
+    <button class="close-details" onclick="closeRecordEditor()">✖</button>
+    <h2 class="details-title" id="recordEditorTitle">Edit Record</h2>
+    <form id="recordEditorForm" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;">
+      <input type="hidden" id="recordEditId" name="id">
+      <label>Work Name<textarea id="recordEditWorkName" name="workName" required style="width:100%;min-height:80px;"></textarea></label>
+      <label>PR Number<input id="recordEditPrNo" name="prNo" required></label>
+      <label>Division / Sub Division<input id="recordEditSubDivision" name="subDivision"></label>
+      <label>Record Type<input id="recordEditRecordType" name="recordType" value="PR"></label>
+      <label>Amount<input id="recordEditAmount" name="amount" inputmode="decimal"></label>
+      <label>Send To<input id="recordEditSendTo" name="sendTo"></label>
+      <label>Status<input id="recordEditStatus" name="status"></label>
+      <label>PR Date<input id="recordEditPrDate" name="prDate"></label>
+      <label>Budget Head<input id="recordEditBudgetHead" name="budgetHead"></label>
+      <label>PO Number<input id="recordEditPoNo" name="poNo"></label>
+      <label style="grid-column:1/-1">PDF File<input id="recordEditPdf" name="pdfs" type="file" accept="application/pdf,.pdf"></label>
+      <div style="grid-column:1/-1;display:flex;justify-content:flex-end;gap:10px;margin-top:8px;">
+        <button type="button" class="view-btn" onclick="closeRecordEditor()">Cancel</button>
+        <button type="submit" class="view-btn">💾 Save Record</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- FILE PREVIEW MODAL -->
 <div id="filePreviewModal" class="details-modal">
   <div class="details-box" style="max-width:900px;">
@@ -3623,7 +3648,7 @@ function getCurrentUser() {
 }
 
 function getAuditName(record = {}) {
-  return record.updatedByName || record.updatedBy || record.modifiedBy || record.editedBy || record.createdByName || record.createdBy || record.ownerName || record.userName || record.email || getCurrentUser().name || "User";
+  return record.lastUpdatedBy || record.updatedByName || record.updatedBy || record.modifiedBy || record.editedBy || record.createdByName || record.createdBy || record.ownerName || record.userName || record.email || getCurrentUser().name || "User";
 }
 
 function authFetchOptions(options = {}) {
@@ -4128,7 +4153,7 @@ let lastRenderedSignature = null;
     // render records
     function renderRecords(records) {
 
-      const renderSignature = JSON.stringify((records || []).map(r => `${r.id || r.prNo || r.workName || ""}:${r.recordType || ""}:${r.subDivision || ""}`));
+      const renderSignature = JSON.stringify((records || []).map(r => `${r.id || r.prNo || r.workName || ""}:${r.recordType || ""}:${r.subDivision || ""}:${r.workName || ""}:${r.amount || ""}:${r.status || ""}:${r.pdfPath || ""}`));
       if (renderSignature === lastRenderedSignature) return;
       lastRenderedSignature = renderSignature;
 
@@ -4202,6 +4227,9 @@ let lastRenderedSignature = null;
 if (listEnabled) {
     container.style.display = "block";
     container.innerHTML = `
+        <div style="display:flex;justify-content:flex-end;margin:0 0 12px;">
+          <button class="view-btn" onclick="openCreateRecordBox(event)">➕ Create New Record</button>
+        </div>
         <table class="table-animate" style="
     width:100%;
     border:1px solid #ccc;
@@ -4268,21 +4296,11 @@ console.log("Index records[0]:", records[0]);
 </td>
             <td style="padding:10px;border:1px solid #ddd;text-align:center;">${getAuditName(r)}</td>
 
-            <!-- ⭐ VIEW PDF BUTTON ⭐ -->
             <td style="padding:10px;text-align:center;">
-                <button
-                    onclick='showPDF(${JSON.stringify(r).replace(/'/g,"&apos;")})'
-                    style="
-                        background:#007bff;
-                        color:white;
-                        border:none;
-                        padding:6px 12px;
-                        border-radius:6px;
-                        cursor:pointer;
-                        font-weight:bold;
-                    ">
-                    View PDF
-                </button>
+                <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
+                  <button onclick='showPDF(${JSON.stringify(r).replace(/'/g,"&apos;")})' style="background:#007bff;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-weight:bold;">View PDF</button>
+                  <button onclick='openEditRecordBox(event, ${JSON.stringify(r).replace(/'/g,"&apos;")})' style="background:#28a745;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-weight:bold;">Edit</button>
+                </div>
             </td>
         </tr>
     `).join("");
@@ -4597,7 +4615,10 @@ function requireFileLogin(action) {
 
 async function uploadFile() {
   const files = [...fileInput.files];
-  if (!files.length) return alert("Select files");
+  if (!files.length) return alert("Select PDF files");
+  if (files.some(f => f.type !== "application/pdf" && !f.name.toLowerCase().endsWith(".pdf"))) {
+    return alert("Only PDF files can be uploaded to File Transfer.");
+  }
 
   const token = localStorage.getItem("adminToken");
   if (!token) {
@@ -4658,8 +4679,23 @@ let pendingDownloadUrl = null;
 
 function resolveFileUrl(url) {
   if (!url) return "";
-  if (/^https?:\/\//i.test(url) || url.startsWith("blob:")) return url;
+  if (url.startsWith("blob:")) return url;
+
   const base = (window.SERVER_URL || SERVER_URL || "").replace(/\/$/, "");
+
+  if (/^https?:\/\//i.test(url)) {
+    try {
+      const parsedUrl = new URL(url);
+      const parsedBase = new URL(base);
+      if (parsedUrl.host === parsedBase.host && parsedBase.protocol === "https:") {
+        parsedUrl.protocol = "https:";
+      }
+      return parsedUrl.toString();
+    } catch (e) {
+      return url.replace(/^http:\/\//i, "https://");
+    }
+  }
+
   return `${base}/${String(url).replace(/^\//, "")}`;
 }
 
@@ -4935,6 +4971,79 @@ function filterEstimates(div) {
     renderEstimates(filtered);
 }
 
+
+function setRecordEditorValue(id, value = "") {
+    const el = document.getElementById(id);
+    if (el) el.value = value ?? "";
+}
+
+function openRecordEditor(record = {}) {
+    document.getElementById("recordEditorTitle").textContent = record.id ? "Edit Record" : "Create New Record";
+    setRecordEditorValue("recordEditId", record.id || "");
+    setRecordEditorValue("recordEditWorkName", record.workName || "");
+    setRecordEditorValue("recordEditPrNo", record.prNo || "");
+    setRecordEditorValue("recordEditSubDivision", record.subDivision || record.divisionLabel || "");
+    setRecordEditorValue("recordEditRecordType", record.recordType || "PR");
+    setRecordEditorValue("recordEditAmount", record.amount || "");
+    setRecordEditorValue("recordEditSendTo", record.sendTo || "");
+    setRecordEditorValue("recordEditStatus", record.status || "Pending");
+    setRecordEditorValue("recordEditPrDate", record.prDate || "");
+    setRecordEditorValue("recordEditBudgetHead", record.budgetHead || "");
+    setRecordEditorValue("recordEditPoNo", record.poNo || "");
+    setRecordEditorValue("recordEditPdf", "");
+    document.getElementById("recordEditorModal").classList.add("active");
+}
+
+window.openEditRecordBox = function(event, record) {
+    event?.stopPropagation?.();
+    openRecordEditor(record);
+};
+
+window.openCreateRecordBox = function(event) {
+    event?.stopPropagation?.();
+    openRecordEditor({});
+};
+
+window.closeRecordEditor = function() {
+    document.getElementById("recordEditorModal").classList.remove("active");
+};
+
+document.getElementById("recordEditorForm")?.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const token = localStorage.getItem("adminToken") || localStorage.getItem("rememberToken");
+    if (!token) {
+        openPasswordModal();
+        return;
+    }
+
+    const fd = new FormData(event.target);
+    const pdfFile = document.getElementById("recordEditPdf")?.files?.[0];
+    if (pdfFile && pdfFile.type !== "application/pdf" && !pdfFile.name.toLowerCase().endsWith(".pdf")) {
+        alert("Only PDF files can be uploaded.");
+        return;
+    }
+    if (!pdfFile) fd.delete("pdfs");
+
+    try {
+        const res = await fetch(`${SERVER_URL}/upload`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+            body: fd
+        });
+        const result = await res.json().catch(() => ({}));
+        if (!res.ok || !result.success) throw new Error(result.error || "Record save failed");
+
+        closeRecordEditor();
+        lastRenderedSignature = null;
+        await loadRecords();
+        alert("Record saved successfully.");
+    } catch (err) {
+        console.error("Record editor save failed", err);
+        alert(err.message || "Failed to save record.");
+    }
+});
+
 window.openRecordDetails = function(event, record) {
     // Prevent clicks on buttons inside card/row
     if (event.target.closest("button")) return;
@@ -5194,15 +5303,12 @@ function toggleSearchBar() {
 
   let finalUrl;
 
-  // 👉 CASE 1: Supabase URL (starts with http)
-  if (pdfPath.startsWith("http")) {
-    finalUrl = pdfPath;
-  }
-  // 👉 CASE 2: File stored on backend
-  else {
+  if (pdfPath.startsWith("http") || pdfPath.startsWith("/files/")) {
+    finalUrl = resolveFileUrl(pdfPath);
+  } else {
     let path = pdfPath;
     if (!path.startsWith("/uploads/")) {
-      path = "/uploads/" + path.replace(/^uploads[\\/]/, "");
+      path = "/uploads/" + path.replace(/^uploads[\/]/, "");
     }
     finalUrl = `${SERVER_URL}${path}`;
   }
@@ -5738,6 +5844,15 @@ const previewList = document.getElementById("previewList");
 function showPreview() {
   const files = [...fileInput.files];
   if (!files.length) return;
+
+  const invalidFiles = files.filter(f => f.type !== "application/pdf" && !f.name.toLowerCase().endsWith(".pdf"));
+  if (invalidFiles.length) {
+    alert("Only PDF files can be uploaded to File Transfer.");
+    fileInput.value = "";
+    preview.style.display = "none";
+    previewList.innerHTML = "";
+    return;
+  }
 
   previewList.innerHTML = files.map(f => `
     <div style="
