@@ -3340,9 +3340,9 @@ header, main, section, .container, .right-panel, #pdf-grid-wrapper { min-width: 
     <div class="drop-icon">📤</div>
     <p class="drop-text">
       Drag & drop files here <br>
-      <span>or click to browse</span>
+      <span>or click to browse PDF files</span>
     </p>
-    <input type="file" id="fileInput" hidden multiple>
+    <input type="file" id="fileInput" accept="application/pdf,.pdf" hidden multiple>
   </div>
 
   <div id="uploadPreview" class="upload-preview" style="display:none; flex-direction:column; gap:8px;">
@@ -4597,7 +4597,10 @@ function requireFileLogin(action) {
 
 async function uploadFile() {
   const files = [...fileInput.files];
-  if (!files.length) return alert("Select files");
+  if (!files.length) return alert("Select PDF files");
+  if (files.some(f => f.type !== "application/pdf" && !f.name.toLowerCase().endsWith(".pdf"))) {
+    return alert("Only PDF files can be uploaded to File Transfer.");
+  }
 
   const token = localStorage.getItem("adminToken");
   if (!token) {
@@ -5738,6 +5741,15 @@ const previewList = document.getElementById("previewList");
 function showPreview() {
   const files = [...fileInput.files];
   if (!files.length) return;
+
+  const invalidFiles = files.filter(f => f.type !== "application/pdf" && !f.name.toLowerCase().endsWith(".pdf"));
+  if (invalidFiles.length) {
+    alert("Only PDF files can be uploaded to File Transfer.");
+    fileInput.value = "";
+    preview.style.display = "none";
+    previewList.innerHTML = "";
+    return;
+  }
 
   previewList.innerHTML = files.map(f => `
     <div style="
