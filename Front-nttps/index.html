@@ -4661,8 +4661,23 @@ let pendingDownloadUrl = null;
 
 function resolveFileUrl(url) {
   if (!url) return "";
-  if (/^https?:\/\//i.test(url) || url.startsWith("blob:")) return url;
+  if (url.startsWith("blob:")) return url;
+
   const base = (window.SERVER_URL || SERVER_URL || "").replace(/\/$/, "");
+
+  if (/^https?:\/\//i.test(url)) {
+    try {
+      const parsedUrl = new URL(url);
+      const parsedBase = new URL(base);
+      if (parsedUrl.host === parsedBase.host && parsedBase.protocol === "https:") {
+        parsedUrl.protocol = "https:";
+      }
+      return parsedUrl.toString();
+    } catch (e) {
+      return url.replace(/^http:\/\//i, "https://");
+    }
+  }
+
   return `${base}/${String(url).replace(/^\//, "")}`;
 }
 
@@ -5197,15 +5212,12 @@ function toggleSearchBar() {
 
   let finalUrl;
 
-  // 👉 CASE 1: Supabase URL (starts with http)
-  if (pdfPath.startsWith("http")) {
-    finalUrl = pdfPath;
-  }
-  // 👉 CASE 2: File stored on backend
-  else {
+  if (pdfPath.startsWith("http") || pdfPath.startsWith("/files/")) {
+    finalUrl = resolveFileUrl(pdfPath);
+  } else {
     let path = pdfPath;
     if (!path.startsWith("/uploads/")) {
-      path = "/uploads/" + path.replace(/^uploads[\\/]/, "");
+      path = "/uploads/" + path.replace(/^uploads[\/]/, "");
     }
     finalUrl = `${SERVER_URL}${path}`;
   }

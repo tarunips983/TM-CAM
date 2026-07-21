@@ -23,6 +23,7 @@ import { uploadBuffer, deleteFile as deleteMongoFile } from "./helpers/gridfs.js
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const app = express();
+app.set("trust proxy", 1);
 await connectMongo();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -277,7 +278,8 @@ function isPdfFile(file) {
 }
 
 function mongoFileUrl(req, fileId) {
-  return `${req.protocol}://${req.get("host")}${PDF_ROUTE_PREFIX}/${fileId}`;
+  const protocol = req.get("x-forwarded-proto")?.split(",")[0] || req.protocol;
+  return `${protocol}://${req.get("host")}${PDF_ROUTE_PREFIX}/${fileId}`;
 }
 
 function extractMongoFileId(value) {
