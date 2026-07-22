@@ -744,6 +744,15 @@ aside.left-bar:hover {
 .record-editor-wide { grid-column:1 / -1; }
 .record-editor-actions { grid-column:1 / -1; display:flex; justify-content:flex-end; gap:10px; margin-top:10px; }
 .editor-meta { grid-column:1 / -1; padding:10px 12px; border-radius:12px; background:#eef6ff; color:#24527a; font-weight:700; }
+.editor-delete-btn { background:#dc3545 !important; margin-right:auto; }
+.modern-confirm-card { background:#fff; width:min(420px, calc(100% - 32px)); border-radius:18px; padding:24px; box-shadow:0 24px 70px rgba(0,0,0,.32); text-align:center; }
+.modern-confirm-card h3 { margin:8px 0 8px; color:#172033; }
+.modern-confirm-card p { color:#5b6472; line-height:1.5; }
+.daily-edit-table-wrapper { grid-column:1 / -1; overflow:auto; border:1px solid #d7e0ef; border-radius:14px; background:#fff; max-height:360px; }
+.daily-edit-table { width:100%; border-collapse:collapse; min-width:900px; }
+.daily-edit-table th { background:#007bff; color:#fff; padding:10px; text-align:left; }
+.daily-edit-table td { border:1px solid #d7e0ef; padding:9px; min-height:36px; }
+.daily-edit-table td[contenteditable="true"] { background:#f8fbff; }
 
 /* Record Details Modal */
 .details-modal {
@@ -3591,6 +3600,7 @@ header, main, section, .container, .right-panel, #pdf-grid-wrapper { min-width: 
       <label>PO Number<input id="recordEditPoNo" name="poNo"></label>
       <label class="record-editor-wide">PDF File<input id="recordEditPdf" name="pdfs" type="file" accept="application/pdf,.pdf"></label>
       <div id="recordEditorMeta" class="editor-meta">Last change details will appear after saving.</div><div class="record-editor-actions">
+        <button type="button" id="recordDeleteBtn" class="view-btn editor-delete-btn" onclick="deleteCurrentRecord()">🗑️ Delete</button>
         <button type="button" class="view-btn" onclick="closeRecordEditor()">Cancel</button>
         <button type="submit" class="view-btn">💾 Save Record</button>
       </div>
@@ -3613,7 +3623,7 @@ header, main, section, .container, .right-panel, #pdf-grid-wrapper { min-width: 
       <label>Send To<input id="estimateEditSendTo" name="sendTo"></label>
       <label>PO No<input id="estimateEditPoNo" name="poNo"></label>
       <div id="estimateEditorMeta" class="editor-meta">Last change details will appear after saving.</div>
-      <div class="record-editor-actions"><button type="button" class="view-btn" onclick="closeEstimateEditor()">Cancel</button><button type="submit" class="view-btn">💾 Save Estimate</button></div>
+      <div class="record-editor-actions"><button type="button" id="estimateDeleteBtn" class="view-btn editor-delete-btn" onclick="deleteCurrentEstimate()">🗑️ Delete</button><button type="button" class="view-btn" onclick="closeEstimateEditor()">Cancel</button><button type="submit" class="view-btn">💾 Save Estimate</button></div>
     </form>
   </div>
 </div>
@@ -3626,9 +3636,9 @@ header, main, section, .container, .right-panel, #pdf-grid-wrapper { min-width: 
       <input type="hidden" id="dailyEditId" name="id">
       <label>Date<input id="dailyEditDate" name="date" type="date" required></label>
       <label>Row Count<input id="dailyEditRowCount" name="rowCount" type="number" min="0"></label>
-      <label class="record-editor-wide">Table HTML / Rows<textarea id="dailyEditTableHTML" name="tableHTML" required></textarea></label>
+      <div class="record-editor-wide" style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><b>Daily Progress Rows</b><button type="button" class="view-btn" onclick="addDailyEditorRow()">➕ Add Row</button></div><div class="daily-edit-table-wrapper"><table id="dailyEditTable" class="daily-edit-table"><thead><tr><th>Date</th><th>Division</th><th>Sub-Division/Location</th><th>Maintenance Activity Description</th><th>Man Power Engaged</th><th>Status</th><th>Remarks/Issues</th><th>Action</th></tr></thead><tbody></tbody></table></div><input type="hidden" id="dailyEditTableHTML" name="tableHTML">
       <div id="dailyEditorMeta" class="editor-meta">Last change details will appear after saving.</div>
-      <div class="record-editor-actions"><button type="button" class="view-btn" onclick="closeDailyEditor()">Cancel</button><button type="submit" class="view-btn">💾 Save Daily Progress</button></div>
+      <div class="record-editor-actions"><button type="button" id="dailyDeleteBtn" class="view-btn editor-delete-btn" onclick="deleteCurrentDaily()">🗑️ Delete</button><button type="button" class="view-btn" onclick="closeDailyEditor()">Cancel</button><button type="submit" class="view-btn">💾 Save Daily Progress</button></div>
     </form>
   </div>
 </div>
@@ -3648,7 +3658,7 @@ header, main, section, .container, .right-panel, #pdf-grid-wrapper { min-width: 
       <label class="record-editor-wide">Photo<input id="clEditPhoto" name="photo" type="file" accept="image/*"></label>
       <input type="hidden" id="clEditPhotoUrl" name="photo_url">
       <div id="clEditorMeta" class="editor-meta">Last change details will appear after saving.</div>
-      <div class="record-editor-actions"><button type="button" class="view-btn" onclick="closeClEditor()">Cancel</button><button type="submit" class="view-btn">💾 Save CL Bio Data</button></div>
+      <div class="record-editor-actions"><button type="button" id="clDeleteBtn" class="view-btn editor-delete-btn" onclick="deleteCurrentCl()">🗑️ Delete</button><button type="button" class="view-btn" onclick="closeClEditor()">Cancel</button><button type="submit" class="view-btn">💾 Save CL Bio Data</button></div>
     </form>
   </div>
 </div>
@@ -3663,6 +3673,18 @@ header, main, section, .container, .right-panel, #pdf-grid-wrapper { min-width: 
 
     <div style="text-align:right;margin-top:15px;">
       <button id="previewDownloadBtn" class="view-btn">⬇ Download</button>
+    </div>
+  </div>
+</div>
+
+<div id="modernConfirmModal" style="display:none;position:fixed;inset:0;align-items:center;justify-content:center;background:rgba(15,23,42,.55);z-index:1800;">
+  <div class="modern-confirm-card">
+    <div style="font-size:42px;">⚠️</div>
+    <h3 id="modernConfirmTitle">Confirm delete</h3>
+    <p id="modernConfirmText">Are you sure?</p>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:18px;">
+      <button id="modernConfirmCancel" class="view-btn" type="button">Cancel</button>
+      <button id="modernConfirmOk" class="view-btn editor-delete-btn" type="button" style="margin-right:0;">Delete</button>
     </div>
   </div>
 </div>
@@ -5067,6 +5089,68 @@ function filterEstimates(div) {
 
 
 
+
+function modernConfirm({ title = "Confirm action", text = "Are you sure?", okText = "Delete" } = {}) {
+    return new Promise(resolve => {
+        const modal = document.getElementById("modernConfirmModal");
+        document.getElementById("modernConfirmTitle").textContent = title;
+        document.getElementById("modernConfirmText").textContent = text;
+        const ok = document.getElementById("modernConfirmOk");
+        const cancel = document.getElementById("modernConfirmCancel");
+        ok.textContent = okText;
+        modal.style.display = "flex";
+        const finish = value => { modal.style.display = "none"; ok.onclick = cancel.onclick = null; resolve(value); };
+        ok.onclick = () => finish(true);
+        cancel.onclick = () => finish(false);
+    });
+}
+
+async function authedDelete(url, label) {
+    const token = localStorage.getItem("adminToken") || localStorage.getItem("rememberToken");
+    if (!token) { openPasswordModal(); return false; }
+    const yes = await modernConfirm({ title: `Delete ${label}?`, text: `This will remove this ${label}. Please confirm before continuing.`, okText: "Yes, delete" });
+    if (!yes) return false;
+    const res = await fetch(url, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) { alert(`Failed to delete ${label}.`); return false; }
+    return true;
+}
+
+function buildDailyEditorTable(tableHTML = "") {
+    const tbody = document.querySelector("#dailyEditTable tbody");
+    if (!tbody) return;
+    tbody.innerHTML = tableHTML || "";
+    if (!tbody.children.length) addDailyEditorRow();
+    [...tbody.querySelectorAll("tr")].forEach(row => makeDailyRowEditable(row));
+}
+
+function makeDailyRowEditable(row) {
+    [...row.children].forEach((cell, index) => {
+        if (index < 7) cell.setAttribute("contenteditable", "true");
+    });
+    let action = row.children[7];
+    if (!action) action = row.insertCell(7);
+    action.removeAttribute("contenteditable");
+    action.innerHTML = `<button type="button" class="view-btn editor-delete-btn" onclick="this.closest('tr').remove()">Delete</button>`;
+}
+
+window.addDailyEditorRow = function() {
+    const tbody = document.querySelector("#dailyEditTable tbody");
+    if (!tbody) return;
+    const row = tbody.insertRow();
+    for (let i = 0; i < 8; i++) row.insertCell(i);
+    makeDailyRowEditable(row);
+};
+
+function collectDailyEditorTableHTML() {
+    const clone = document.querySelector("#dailyEditTable tbody")?.cloneNode(true);
+    if (!clone) return "";
+    clone.querySelectorAll("tr").forEach(row => {
+        while (row.children.length > 7) row.deleteCell(7);
+        [...row.children].forEach(cell => cell.removeAttribute("contenteditable"));
+    });
+    return clone.innerHTML;
+}
+
 function currentEditStamp() {
     const user = getCurrentUser();
     return `Last changed by ${user.name || user.email || "User"} on ${new Date().toLocaleString()}`;
@@ -5086,6 +5170,7 @@ function openEstimateEditor(record = {}) {
     setField("estimateEditEstimateNo", record.estimateNo || record.estimate_no || ""); setField("estimateEditAmount", record.amount || record.grossAmount || record.netAmount || "");
     setField("estimateEditStatus", record.status || "Pending"); setField("estimateEditSendTo", record.sendTo || ""); setField("estimateEditPoNo", record.poNo || record.po_no || "");
     setEditorMeta("estimateEditorMeta", record.lastUpdatedBy ? `Last changed by ${record.lastUpdatedBy}` : currentEditStamp());
+    document.getElementById("estimateDeleteBtn").style.display = record.id ? "inline-block" : "none";
     document.getElementById("estimateEditorModal").classList.add("active");
 }
 window.openEditEstimateBox = (event, record) => { event?.stopPropagation?.(); openEstimateEditor(record); };
@@ -5105,7 +5190,8 @@ document.getElementById("estimateEditorForm")?.addEventListener("submit", async 
 function openDailyEditor(snapshot = {}) {
     document.getElementById("dailyEditorTitle").textContent = snapshot.id ? "Edit Daily Progress" : "Create New Daily Progress";
     setField("dailyEditId", snapshot.id || ""); setField("dailyEditDate", snapshot.date || new Date().toISOString().slice(0,10));
-    setField("dailyEditRowCount", snapshot.rowCount || 0); setField("dailyEditTableHTML", snapshot.tableHTML || ""); setEditorMeta("dailyEditorMeta", currentEditStamp());
+    setField("dailyEditRowCount", snapshot.rowCount || 0); setField("dailyEditTableHTML", snapshot.tableHTML || ""); buildDailyEditorTable(snapshot.tableHTML || ""); setEditorMeta("dailyEditorMeta", currentEditStamp());
+    document.getElementById("dailyDeleteBtn").style.display = snapshot.id ? "inline-block" : "none";
     document.getElementById("dailyEditorModal").classList.add("active");
 }
 window.openEditDailyBox = event => { event?.stopPropagation?.(); openDailyEditor(window.currentDailySnapshot || {}); };
@@ -5113,7 +5199,9 @@ window.openCreateDailyBox = event => { event?.stopPropagation?.(); openDailyEdit
 window.closeDailyEditor = () => document.getElementById("dailyEditorModal").classList.remove("active");
 document.getElementById("dailyEditorForm")?.addEventListener("submit", async event => {
     event.preventDefault(); const token = localStorage.getItem("adminToken") || localStorage.getItem("rememberToken"); if (!token) return openPasswordModal();
+    document.getElementById("dailyEditTableHTML").value = collectDailyEditorTableHTML();
     const payload = Object.fromEntries(new FormData(event.target).entries());
+    payload.rowCount = document.querySelectorAll("#dailyEditTable tbody tr").length;
     const res = await fetch(`${SERVER_URL}/daily-progress`, { method:"POST", headers:{ "Content-Type":"application/json", Authorization:`Bearer ${token}` }, body:JSON.stringify(payload) });
     if (!res.ok) return alert("Failed to save daily progress."); closeDailyEditor(); await loadDailyProgressDates(); alert("Daily progress saved successfully.");
 });
@@ -5121,7 +5209,7 @@ document.getElementById("dailyEditorForm")?.addEventListener("submit", async eve
 function openClEditor(c = {}) {
     document.getElementById("clEditorTitle").textContent = c.id ? "Edit CL Bio Data" : "Create New CL Bio Data";
     [["clEditId",c.id],["clEditName",c.name],["clEditGender",c.gender],["clEditAadhar",c.aadhar],["clEditPhone",c.phone],["clEditStation",c.station],["clEditDivision",c.division],["clEditDoj",c.doj],["clEditDob",c.dob],["clEditWages",c.wages],["clEditRelation",c.relation],["clEditNominee",c.nominee],["clEditPhotoUrl",c.photo_url]].forEach(([id,val])=>setField(id,val||""));
-    setField("clEditPhoto", ""); setEditorMeta("clEditorMeta", currentEditStamp()); document.getElementById("clEditorModal").classList.add("active");
+    setField("clEditPhoto", ""); setEditorMeta("clEditorMeta", currentEditStamp()); document.getElementById("clDeleteBtn").style.display = c.id ? "inline-block" : "none"; document.getElementById("clEditorModal").classList.add("active");
 }
 window.openEditClBox = (event, c) => { event?.stopPropagation?.(); openClEditor(c); };
 window.openCreateClBox = event => { event?.stopPropagation?.(); openClEditor({}); };
@@ -5132,6 +5220,12 @@ document.getElementById("clEditorForm")?.addEventListener("submit", async event 
     const res = await fetch(`${SERVER_URL}/cl`, { method:"POST", headers:{ Authorization:`Bearer ${token}` }, body:fd });
     if (!res.ok) return alert("Failed to save CL bio data."); closeClEditor(); await renderCLBioData(); alert("CL bio data saved successfully.");
 });
+
+
+window.deleteCurrentEstimate = async function() { const id = document.getElementById("estimateEditId").value; if (!id) return; if (await authedDelete(`${SERVER_URL}/estimates/${id}`, "estimate")) { closeEstimateEditor(); await loadEstimates(); } };
+window.deleteCurrentDaily = async function() { const id = document.getElementById("dailyEditId").value; if (!id) return; if (await authedDelete(`${SERVER_URL}/daily-progress/${id}`, "daily progress")) { closeDailyEditor(); await loadDailyProgressDates(); document.getElementById("inlineSnapshotFrame").innerHTML = "<p style='color:#555'>Please select a date from the list on the left.</p>"; } };
+window.deleteCurrentCl = async function() { const id = document.getElementById("clEditId").value; if (!id) return; if (await authedDelete(`${SERVER_URL}/cl/${id}`, "CL bio data")) { closeClEditor(); await renderCLBioData(); } };
+window.deleteCurrentRecord = async function() { const id = document.getElementById("recordEditId").value; if (!id) return; if (await authedDelete(`${SERVER_URL}/records/${id}`, "record")) { closeRecordEditor(); lastRenderedSignature = null; await loadRecords(); } };
 
 function setRecordEditorValue(id, value = "") {
     const el = document.getElementById(id);
@@ -5478,9 +5572,7 @@ function toggleSearchBar() {
   modalPR.textContent = "PR No: " + (prNo || 'N/A');
 
   // Load PDF
- pdfFrame.src =
-  "https://docs.google.com/gview?embedded=1&url=" +
-  encodeURIComponent(finalUrl);
+ pdfFrame.src = finalUrl;
 
   productModal.classList.add('active');
   document.body.classList.add("modal-open");
