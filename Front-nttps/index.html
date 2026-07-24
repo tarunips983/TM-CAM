@@ -3248,6 +3248,27 @@ header, main, section, .container, .right-panel, #pdf-grid-wrapper { min-width: 
   .right-bar-header > div { justify-content:flex-start !important; overflow-x:auto !important; padding-bottom:4px !important; }
 }
 
+
+/* Header/auth/debug polish */
+.nav-right { display:flex !important; align-items:center !important; gap:12px !important; flex-wrap:wrap; justify-content:flex-end; }
+.search-wrapper { flex:1 1 260px; min-width:220px; max-width:420px; }
+.search-field { width:100% !important; border-radius:999px !important; height:40px !important; }
+#loginLink, #logoutBtn, #currentUserChip { align-items:center; min-height:40px; }
+#modernConfirmModal { z-index: 20000 !important; }
+#modernConfirmModal .modern-confirm-card { position:relative; z-index:20001; }
+@media (min-width: 769px) {
+  header { gap:16px !important; }
+  header > div:first-child { flex:0 0 auto; }
+  .nav-right { flex:1 1 auto !important; }
+}
+@media (max-width: 768px) {
+  header { grid-template-columns:1fr !important; }
+  .nav-right { display:grid !important; grid-template-columns:minmax(0,1fr) 48px !important; }
+  .search-wrapper { min-width:0 !important; max-width:none !important; width:100% !important; }
+  .search-field { display:block !important; opacity:1 !important; visibility:visible !important; background:#fff !important; color:#172033 !important; }
+  #modernConfirmModal { align-items:center !important; padding:16px !important; }
+}
+
 </style>
 
 </head>
@@ -3745,7 +3766,7 @@ header, main, section, .container, .right-panel, #pdf-grid-wrapper { min-width: 
   </div>
 </div>
 
-<div id="modernConfirmModal" style="display:none;position:fixed;inset:0;align-items:center;justify-content:center;background:rgba(15,23,42,.55);z-index:1800;">
+<div id="modernConfirmModal" style="display:none;position:fixed;inset:0;align-items:center;justify-content:center;background:rgba(15,23,42,.55);z-index:20000;">
   <div class="modern-confirm-card">
     <div style="font-size:42px;">⚠️</div>
     <h3 id="modernConfirmTitle">Confirm delete</h3>
@@ -4215,7 +4236,7 @@ function logout() {
 }
     function updateLoginButtons(){
 
-    const loginBtn=document.getElementById("loginBtn");
+    const loginBtn=document.getElementById("loginLink");
     const logoutBtn=document.getElementById("logoutBtn");
     const chip=document.getElementById("currentUserChip");
 
@@ -4241,12 +4262,8 @@ function logout() {
     }
 
     if(chip){
-
-        chip.textContent=
-            loggedIn
-                ? `👤 ${user.name || user.email}`
-                : "";
-
+        chip.textContent = loggedIn ? `👤 ${user.name || user.email}` : "";
+        chip.style.display = loggedIn ? "inline-flex" : "none";
     }
 
 }
