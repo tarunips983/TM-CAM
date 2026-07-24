@@ -10,6 +10,7 @@ import nodemailer from "nodemailer";
 import cron from "node-cron";
 import { createClient } from "@supabase/supabase-js";
 import { createRequire } from "module";
+import { randomInt, timingSafeEqual } from "crypto";
 const require = createRequire(import.meta.url);
 const pdf = require("pdf-parse");
 import Tesseract from "tesseract.js";
@@ -176,6 +177,9 @@ if (!JWT_SECRET || JWT_SECRET.length < 32) {
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const LOGIN_MAX_ATTEMPTS = 5;
 const loginAttempts = new Map();
+const PASSWORD_RESET_WINDOW_MS = 15 * 60 * 1000;
+const PASSWORD_RESET_MAX_REQUESTS = 3;
+const passwordResetRequests = new Map();
 
 function clientIp(req) {
   return req.ip || req.socket.remoteAddress || "unknown";
@@ -207,6 +211,27 @@ function clearLoginAttempts(req) {
   loginAttempts.delete(clientIp(req));
 }
 
+function passwordResetRateLimit(req, res, next) {
+  const email = normalizeEmail(req.body?.email);
+  const key = `${clientIp(req)}:${email}`;
+  const now = Date.now();
+  const request = passwordResetRequests.get(key);
+
+  if (!request || now > request.resetAt) {
+    passwordResetRequests.set(key, { count: 1, resetAt: now + PASSWORD_RESET_WINDOW_MS });
+    return next();
+  }
+
+  if (request.count >= PASSWORD_RESET_MAX_REQUESTS) {
+    const retryAfter = Math.ceil((request.resetAt - now) / 1000);
+    res.set("Retry-After", String(retryAfter));
+    return res.status(429).json({ message: "Too many reset requests. Please try again later." });
+  }
+
+  request.count += 1;
+  return next();
+}
+
 function normalizeEmail(value) {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
@@ -218,6 +243,18 @@ function isStrongPassword(value) {
     /[A-Z]/.test(value) &&
     /\d/.test(value) &&
     /[^A-Za-z0-9]/.test(value);
+}
+
+function createOtp() {
+  return randomInt(100000, 1000000).toString();
+}
+
+function otpMatches(expected, received) {
+  if (typeof expected !== "string" || typeof received !== "string" || expected.length !== received.length) {
+    return false;
+  }
+
+  return timingSafeEqual(Buffer.from(expected), Buffer.from(received));
 }
 
 function authenticateToken(req, res, next) {
@@ -1056,7 +1093,8 @@ app.post("/daily-progress/batch-import", authenticateToken, async (req, res) => 
 // USER AUTH (store users in Supabase table, JWT handled here)
 // =================================================================
 
-let pendingVerifications = {};
+const pendingVerifications = new Map();
+const pendingPasswordResets = new Map();
 
 app.post("/register-send-otp", async (req, res) => {
   try {
@@ -1078,15 +1116,15 @@ app.post("/register-send-otp", async (req, res) => {
       return res.status(409).json({ message: "Already registered" });
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = createOtp();
     const passwordHash = await bcrypt.hash(password, 10);
 
-    pendingVerifications[email] = {
+    pendingVerifications.set(email, {
       email,
       passwordHash,
       otp,
       expires: Date.now() + 10 * 60 * 1000,
-    };
+    });
 
     await transporter.sendMail({
       from: EMAIL_USER,
@@ -1109,8 +1147,8 @@ app.post("/register-verify", async (req, res) => {
   const { otp } = req.body;
 
   try {
-    const pending = pendingVerifications[email];
-    if (!pending || pending.otp !== otp || pending.expires < Date.now()) {
+    const pending = pendingVerifications.get(email);
+    if (!pending || !otpMatches(pending.otp, otp) || pending.expires < Date.now()) {
       return res.status(400).json({ message: "Invalid or expired OTP" });
     }
 
@@ -1121,12 +1159,76 @@ app.post("/register-verify", async (req, res) => {
 
     if (error) throw error;
 
-    delete pendingVerifications[email];
+    pendingVerifications.delete(email);
 
     res.json({ message: "Registration complete" });
   } catch (err) {
     console.error("register-verify error:", err);
     res.status(500).json({ message: "Registration failed", error: err.toString() });
+  }
+});
+
+app.post("/password-reset-send-otp", passwordResetRateLimit, async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body.email);
+    if (!email) {
+      return res.status(400).json({ message: "Enter a valid email address." });
+    }
+
+    const { data: user, error } = await supabase
+      .from("users")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    // Keep the response identical whether or not the account exists.
+    if (user) {
+      const otp = createOtp();
+      pendingPasswordResets.set(email, {
+        otp,
+        expires: Date.now() + 10 * 60 * 1000,
+      });
+
+      await transporter.sendMail({
+        from: EMAIL_USER,
+        to: email,
+        subject: "Password Reset Code",
+        text: `Your password reset code is ${otp}. It expires in 10 minutes.`,
+      });
+    }
+
+    return res.json({ message: "If the email is registered, a verification code has been sent." });
+  } catch (err) {
+    console.error("password-reset-send-otp error:", err);
+    return res.status(500).json({ message: "Unable to send a verification code. Please try again." });
+  }
+});
+
+app.post("/password-reset", async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body.email);
+    const { otp, newPassword } = req.body;
+    const pending = pendingPasswordResets.get(email);
+
+    if (!email || !isStrongPassword(newPassword) || !pending || pending.expires < Date.now() || !otpMatches(pending.otp, otp)) {
+      return res.status(400).json({ message: "Invalid, expired, or incomplete password reset request." });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    const { error } = await supabase
+      .from("users")
+      .update({ password_hash: passwordHash })
+      .eq("email", email);
+
+    if (error) throw error;
+
+    pendingPasswordResets.delete(email);
+    return res.json({ message: "Password reset successful." });
+  } catch (err) {
+    console.error("password-reset error:", err);
+    return res.status(500).json({ message: "Unable to reset password. Please try again." });
   }
 });
 
