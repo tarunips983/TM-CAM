@@ -167,7 +167,58 @@ const transporter = nodemailer.createTransport({
 // ---------------------------------------------
 // AUTHENTICATION MIDDLEWARE (same JWT logic)
 // ---------------------------------------------
-const JWT_SECRET = "810632";
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET || JWT_SECRET.length < 32) {
+  throw new Error("JWT_SECRET must be set to a random value of at least 32 characters");
+}
+
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_MAX_ATTEMPTS = 5;
+const loginAttempts = new Map();
+
+function clientIp(req) {
+  return req.ip || req.socket.remoteAddress || "unknown";
+}
+
+function loginRateLimit(req, res, next) {
+  const key = clientIp(req);
+  const now = Date.now();
+  const attempt = loginAttempts.get(key);
+
+  if (!attempt || now > attempt.resetAt) {
+    loginAttempts.set(key, { count: 1, resetAt: now + LOGIN_WINDOW_MS });
+    return next();
+  }
+
+  if (attempt.count >= LOGIN_MAX_ATTEMPTS) {
+    const retryAfter = Math.ceil((attempt.resetAt - now) / 1000);
+    res.set("Retry-After", String(retryAfter));
+    return res.status(429).json({
+      message: "Too many sign-in attempts. Please try again later.",
+    });
+  }
+
+  attempt.count += 1;
+  return next();
+}
+
+function clearLoginAttempts(req) {
+  loginAttempts.delete(clientIp(req));
+}
+
+function normalizeEmail(value) {
+  return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
+
+function isStrongPassword(value) {
+  return typeof value === "string" &&
+    value.length >= 12 &&
+    /[a-z]/.test(value) &&
+    /[A-Z]/.test(value) &&
+    /\d/.test(value) &&
+    /[^A-Za-z0-9]/.test(value);
+}
 
 function authenticateToken(req, res, next) {
   const authHeader = req.headers["authorization"];
@@ -1009,9 +1060,10 @@ let pendingVerifications = {};
 
 app.post("/register-send-otp", async (req, res) => {
   try {
-    const { email, password, inviteCode } = req.body;
+    const { password, inviteCode } = req.body;
+    const email = normalizeEmail(req.body.email);
 
-    if (!email || !password || inviteCode !== "810632") {
+    if (!email || !isStrongPassword(password) || inviteCode !== process.env.REGISTRATION_INVITE_CODE) {
       return res.status(400).json({ message: "Invalid data" });
     }
 
@@ -1053,7 +1105,8 @@ app.post("/register-send-otp", async (req, res) => {
 });
 
 app.post("/register-verify", async (req, res) => {
-  const { email, otp } = req.body;
+  const email = normalizeEmail(req.body.email);
+  const { otp } = req.body;
 
   try {
     const pending = pendingVerifications[email];
@@ -1077,9 +1130,14 @@ app.post("/register-verify", async (req, res) => {
   }
 });
 
-app.post("/login", async (req, res) => {
+app.post("/login", loginRateLimit, async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const email = normalizeEmail(req.body.email);
+    const { password } = req.body;
+
+    if (!email || typeof password !== "string") {
+      return res.status(401).json({ message: "Invalid email or password." });
+    }
 
     // 1. Get user from Supabase
     const { data: user, error } = await supabase
@@ -1095,10 +1153,12 @@ app.post("/login", async (req, res) => {
     // 2. Check password
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
-      return res.status(401).json({ message: "Incorrect password." });
+      return res.status(401).json({ message: "Invalid email or password." });
     }
 
-    // 3. Create JWT token ✅
+    clearLoginAttempts(req);
+
+    // 3. Create a short-lived JWT token.
     const token = jwt.sign(
   {
     id: user.id,
