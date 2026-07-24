@@ -725,6 +725,35 @@ aside.left-bar:hover {
     padding: 20px;
     box-sizing: border-box;
 }
+
+.record-editor-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 18px;
+}
+.record-editor-form label { display:flex; flex-direction:column; gap:7px; font-size:12px; font-weight:800; color:#4b5563; text-transform:uppercase; letter-spacing:.04em; }
+.record-editor-form input,
+.record-editor-form textarea,
+.record-editor-form select {
+  width:100%; border:1px solid #d7e0ef; border-radius:12px; padding:11px 12px; background:#f8fbff; color:#172033; font-size:15px; outline:none; box-shadow: inset 0 1px 2px rgba(15,23,42,.04); transition:.2s ease;
+}
+.record-editor-form textarea { min-height:92px; resize:vertical; line-height:1.45; }
+.record-editor-form input:focus,
+.record-editor-form textarea:focus,
+.record-editor-form select:focus { border-color:#007bff; background:#fff; box-shadow:0 0 0 4px rgba(0,123,255,.12); }
+.record-editor-wide { grid-column:1 / -1; }
+.record-editor-actions { grid-column:1 / -1; display:flex; justify-content:flex-end; gap:10px; margin-top:10px; }
+.editor-meta { grid-column:1 / -1; padding:10px 12px; border-radius:12px; background:#eef6ff; color:#24527a; font-weight:700; }
+.editor-delete-btn { background:#dc3545 !important; margin-right:auto; }
+.modern-confirm-card { background:#fff; width:min(420px, calc(100% - 32px)); border-radius:18px; padding:24px; box-shadow:0 24px 70px rgba(0,0,0,.32); text-align:center; }
+.modern-confirm-card h3 { margin:8px 0 8px; color:#172033; }
+.modern-confirm-card p { color:#5b6472; line-height:1.5; }
+.daily-edit-table-wrapper { grid-column:1 / -1; overflow:auto; border:1px solid #d7e0ef; border-radius:14px; background:#fff; max-height:360px; }
+.daily-edit-table { width:100%; border-collapse:collapse; min-width:900px; }
+.daily-edit-table th { background:#007bff; color:#fff; padding:10px; text-align:left; }
+.daily-edit-table td { border:1px solid #d7e0ef; padding:9px; min-height:36px; }
+.daily-edit-table td[contenteditable="true"] { background:#f8fbff; }
+
 /* Record Details Modal */
 .details-modal {
     z-index: 9000;
@@ -3153,6 +3182,52 @@ header, main, section, .container, .right-panel, #pdf-grid-wrapper { min-width: 
   .modal, .modal-content, #modalContent, .details-box { max-width: 100% !important; }
 }
 
+
+/* Final mobile polish: compact header, scrollable filters, visible create actions */
+.mobile-create-record-btn { display:none; margin: 6px auto 14px; width:min(92%, 420px); }
+@media (max-width: 768px) {
+  body { overflow-x:hidden; }
+  header {
+    padding: calc(10px + env(safe-area-inset-top)) 12px 12px !important;
+    gap: 10px !important;
+    box-shadow: 0 10px 28px rgba(15,23,42,.22) !important;
+  }
+  header > div:first-child { justify-content:flex-start !important; grid-column:1 / -1 !important; }
+  header > div:first-child img { width:38px !important; height:38px !important; object-fit:cover; }
+  header > div:first-child h1 { font-size: clamp(18px, 5.2vw, 24px) !important; letter-spacing:.2px; }
+  .nav-right { display:grid !important; grid-template-columns: 1fr 48px !important; align-items:center !important; gap:10px !important; }
+  .nav-right .search-wrapper { display:block !important; grid-column:1 !important; }
+  .nav-right .search-field { width:100% !important; border-radius:16px !important; height:46px !important; }
+  #currentUserChip, #loginLink, #logoutBtn { display:none !important; }
+  .burger-menu { grid-column:2 !important; background:rgba(255,255,255,.13) !important; border:1px solid rgba(255,255,255,.24) !important; }
+  #subNavBar { top: var(--app-header-height, 120px) !important; padding:10px !important; }
+  .subnav-btn { border-radius:18px !important; min-height:42px !important; }
+  .mobile-create-record-btn { display:block !important; }
+  #pdfHeader { font-size: clamp(22px, 7vw, 30px) !important; margin-top:18px !important; }
+  .left-bar, #estimates-leftbar, #inlineLeftBar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: min(86vw, 360px) !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain !important;
+    padding: calc(18px + env(safe-area-inset-top)) 16px calc(120px + env(safe-area-inset-bottom)) !important;
+    z-index: 7000 !important;
+    transform: translateX(-105%) !important;
+    border-radius: 0 22px 22px 0 !important;
+    box-shadow: 18px 0 55px rgba(15,23,42,.28) !important;
+  }
+  .left-bar.active, #estimates-leftbar.active, #inlineLeftBar.active { transform: translateX(0) !important; }
+  .left-bar button, #estimates-leftbar button, .date-list-item { min-height:44px !important; margin-bottom:8px !important; }
+  .product { border-radius:22px !important; box-shadow:0 14px 36px rgba(15,23,42,.12) !important; }
+  .product .view-btn { min-height:48px !important; border-radius:18px !important; width:100% !important; }
+  .details-box { width: calc(100% - 20px) !important; max-height: calc(100dvh - 24px) !important; overflow-y:auto !important; border-radius:18px !important; }
+  .record-editor-form { grid-template-columns:1fr !important; }
+}
+
 </style>
 
 </head>
@@ -3203,10 +3278,11 @@ header, main, section, .container, .right-panel, #pdf-grid-wrapper { min-width: 
 <div id="menuOverlay" class="menu-overlay">
 <!-- Dropdown Menu -->
 <div id="dropdownMenu" class="dropdown-menu">
-  <a onclick="openPasswordModal()">➕ Add Record</a>
+  <a onclick="openCreateRecordBox(event)">➕ Create New Record</a>
     <a onclick="window.location.href='test.html'">📄 Imprest Covering letter</a>
     <!-- Add more menu items here -->
     <a href="settings.html">⚙ Settings</a>
+    <a id="mobileMenuLogout" onclick="logout()">🚪 Logout</a>
     <a href="#">📞 Contact</a>
 </div>
     </div>
@@ -3241,6 +3317,7 @@ header, main, section, .container, .right-panel, #pdf-grid-wrapper { min-width: 
 
       <section id="pdf-grid-wrapper" class="right-panel">
          <h1 id="pdfHeader" style="margin: 10px;text-align: center;">📄 All Stage-V Indents</h1>
+        <button id="mobileCreateRecordBtn" class="view-btn mobile-create-record-btn" onclick="openCreateRecordBox(event)">➕ Create New Record</button>
         <div id="pdf-loader" class="loader"></div>
         <div class="product-grid" id="product-list" style="display:none">
 
@@ -3276,7 +3353,11 @@ header, main, section, .container, .right-panel, #pdf-grid-wrapper { min-width: 
       <section id="inlineRightBar" class="right-panel">
         <div class="right-bar-header" style="padding:12px 16px;border-bottom:1px solid #eee;background:#fff">
           <h3 id="inlineSnapshotTitle" style="margin:0">Select a date to view</h3>
-          <button id="inlinePrintBtn" onclick="printDailyProgress()" style="display:none">🖨️ Print</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="view-btn" onclick="openCreateDailyBox(event)">➕ Create New Daily</button>
+            <button id="inlineEditDailyBtn" class="view-btn" onclick="openEditDailyBox(event)" style="display:none">Edit</button>
+            <button id="inlinePrintBtn" onclick="printDailyProgress()" style="display:none">🖨️ Print</button>
+          </div>
         </div>
         <div id="inlineSnapshotFrame" style="flex:1;padding:20px">
           <p style="color:#555">Please select a date from the list on the left.</p>
@@ -3308,7 +3389,10 @@ header, main, section, .container, .right-panel, #pdf-grid-wrapper { min-width: 
     <!-- CL Bio Data View -->
 <div id="clbiodata-container" class="cl-view">
   <div style="padding:20px; width:100%;">
-    <h2>👥 CL's Bio Data</h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2>👥 CL's Bio Data</h2>
+      <button class="view-btn" onclick="openCreateClBox(event)">➕ Create New CL</button>
+    </div>
 
     <div id="clBioGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:20px; margin-top:20px;"></div>
   </div>
@@ -3340,9 +3424,9 @@ header, main, section, .container, .right-panel, #pdf-grid-wrapper { min-width: 
     <div class="drop-icon">📤</div>
     <p class="drop-text">
       Drag & drop files here <br>
-      <span>or click to browse</span>
+      <span>or click to browse PDF files</span>
     </p>
-    <input type="file" id="fileInput" hidden multiple>
+    <input type="file" id="fileInput" accept="application/pdf,.pdf" hidden multiple>
   </div>
 
   <div id="uploadPreview" class="upload-preview" style="display:none; flex-direction:column; gap:8px;">
@@ -3546,6 +3630,87 @@ header, main, section, .container, .right-panel, #pdf-grid-wrapper { min-width: 
     </div>
   </div>
 </div>
+<div id="recordEditorModal" class="details-modal">
+  <div class="details-box" style="max-width:760px;">
+    <button class="close-details" onclick="closeRecordEditor()">✖</button>
+    <h2 class="details-title" id="recordEditorTitle">Edit Record</h2>
+    <form id="recordEditorForm" class="record-editor-form">
+      <input type="hidden" id="recordEditId" name="id">
+      <label class="record-editor-wide">Work Name<textarea id="recordEditWorkName" name="workName" required></textarea></label>
+      <label>PR Number<input id="recordEditPrNo" name="prNo" required></label>
+      <label>Division / Sub Division<input id="recordEditSubDivision" name="subDivision"></label>
+      <label>Record Type<input id="recordEditRecordType" name="recordType" value="PR"></label>
+      <label>Amount<input id="recordEditAmount" name="amount" inputmode="decimal"></label>
+      <label>Send To<input id="recordEditSendTo" name="sendTo"></label>
+      <label>Status<input id="recordEditStatus" name="status"></label>
+      <label>PR Date<input id="recordEditPrDate" name="prDate"></label>
+      <label>Budget Head<input id="recordEditBudgetHead" name="budgetHead"></label>
+      <label>PO Number<input id="recordEditPoNo" name="poNo"></label>
+      <label class="record-editor-wide">PDF File<input id="recordEditPdf" name="pdfs" type="file" accept="application/pdf,.pdf"></label>
+      <div id="recordEditorMeta" class="editor-meta">Last change details will appear after saving.</div><div class="record-editor-actions">
+        <button type="button" id="recordDeleteBtn" class="view-btn editor-delete-btn" onclick="deleteCurrentRecord()">🗑️ Delete</button>
+        <button type="button" class="view-btn" onclick="closeRecordEditor()">Cancel</button>
+        <button type="submit" class="view-btn">💾 Save Record</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="estimateEditorModal" class="details-modal">
+  <div class="details-box" style="max-width:760px;">
+    <button class="close-details" onclick="closeEstimateEditor()">✖</button>
+    <h2 class="details-title" id="estimateEditorTitle">Edit Estimate</h2>
+    <form id="estimateEditorForm" class="record-editor-form">
+      <input type="hidden" id="estimateEditId" name="id">
+      <label class="record-editor-wide">Work Name<textarea id="estimateEditDescription" name="description" required></textarea></label>
+      <label>Division<input id="estimateEditDivision" name="division"></label>
+      <label>PR No<input id="estimateEditPrNo" name="prNo"></label>
+      <label>Estimate No<input id="estimateEditEstimateNo" name="estimateNo"></label>
+      <label>Amount<input id="estimateEditAmount" name="amount" inputmode="decimal"></label>
+      <label>Status<input id="estimateEditStatus" name="status"></label>
+      <label>Send To<input id="estimateEditSendTo" name="sendTo"></label>
+      <label>PO No<input id="estimateEditPoNo" name="poNo"></label>
+      <div id="estimateEditorMeta" class="editor-meta">Last change details will appear after saving.</div>
+      <div class="record-editor-actions"><button type="button" id="estimateDeleteBtn" class="view-btn editor-delete-btn" onclick="deleteCurrentEstimate()">🗑️ Delete</button><button type="button" class="view-btn" onclick="closeEstimateEditor()">Cancel</button><button type="submit" class="view-btn">💾 Save Estimate</button></div>
+    </form>
+  </div>
+</div>
+
+<div id="dailyEditorModal" class="details-modal">
+  <div class="details-box" style="max-width:760px;">
+    <button class="close-details" onclick="closeDailyEditor()">✖</button>
+    <h2 class="details-title" id="dailyEditorTitle">Edit Daily Progress</h2>
+    <form id="dailyEditorForm" class="record-editor-form">
+      <input type="hidden" id="dailyEditId" name="id">
+      <label>Date<input id="dailyEditDate" name="date" type="date" required></label>
+      <label>Row Count<input id="dailyEditRowCount" name="rowCount" type="number" min="0"></label>
+      <div class="record-editor-wide" style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><b>Daily Progress Rows</b><button type="button" class="view-btn" onclick="addDailyEditorRow()">➕ Add Row</button></div><div class="daily-edit-table-wrapper"><table id="dailyEditTable" class="daily-edit-table"><thead><tr><th>Date</th><th>Division</th><th>Sub-Division/Location</th><th>Maintenance Activity Description</th><th>Man Power Engaged</th><th>Status</th><th>Remarks/Issues</th><th>Action</th></tr></thead><tbody></tbody></table></div><input type="hidden" id="dailyEditTableHTML" name="tableHTML">
+      <div id="dailyEditorMeta" class="editor-meta">Last change details will appear after saving.</div>
+      <div class="record-editor-actions"><button type="button" id="dailyDeleteBtn" class="view-btn editor-delete-btn" onclick="deleteCurrentDaily()">🗑️ Delete</button><button type="button" class="view-btn" onclick="closeDailyEditor()">Cancel</button><button type="submit" class="view-btn">💾 Save Daily Progress</button></div>
+    </form>
+  </div>
+</div>
+
+<div id="clEditorModal" class="details-modal">
+  <div class="details-box" style="max-width:760px;">
+    <button class="close-details" onclick="closeClEditor()">✖</button>
+    <h2 class="details-title" id="clEditorTitle">Edit CL Bio Data</h2>
+    <form id="clEditorForm" class="record-editor-form">
+      <input type="hidden" id="clEditId" name="id">
+      <label>Name<input id="clEditName" name="name" required></label><label>Gender<input id="clEditGender" name="gender"></label>
+      <label>Aadhar<input id="clEditAadhar" name="aadhar"></label><label>Phone<input id="clEditPhone" name="phone"></label>
+      <label>Station<input id="clEditStation" name="station"></label><label>Division<input id="clEditDivision" name="division"></label>
+      <label>DOJ<input id="clEditDoj" name="doj"></label><label>DOB<input id="clEditDob" name="dob"></label>
+      <label>Wages<input id="clEditWages" name="wages" inputmode="decimal"></label><label>Relation<input id="clEditRelation" name="relation"></label>
+      <label class="record-editor-wide">Nominee<input id="clEditNominee" name="nominee"></label>
+      <label class="record-editor-wide">Photo<input id="clEditPhoto" name="photo" type="file" accept="image/*"></label>
+      <input type="hidden" id="clEditPhotoUrl" name="photo_url">
+      <div id="clEditorMeta" class="editor-meta">Last change details will appear after saving.</div>
+      <div class="record-editor-actions"><button type="button" id="clDeleteBtn" class="view-btn editor-delete-btn" onclick="deleteCurrentCl()">🗑️ Delete</button><button type="button" class="view-btn" onclick="closeClEditor()">Cancel</button><button type="submit" class="view-btn">💾 Save CL Bio Data</button></div>
+    </form>
+  </div>
+</div>
+
 <!-- FILE PREVIEW MODAL -->
 <div id="filePreviewModal" class="details-modal">
   <div class="details-box" style="max-width:900px;">
@@ -3556,6 +3721,18 @@ header, main, section, .container, .right-panel, #pdf-grid-wrapper { min-width: 
 
     <div style="text-align:right;margin-top:15px;">
       <button id="previewDownloadBtn" class="view-btn">⬇ Download</button>
+    </div>
+  </div>
+</div>
+
+<div id="modernConfirmModal" style="display:none;position:fixed;inset:0;align-items:center;justify-content:center;background:rgba(15,23,42,.55);z-index:1800;">
+  <div class="modern-confirm-card">
+    <div style="font-size:42px;">⚠️</div>
+    <h3 id="modernConfirmTitle">Confirm delete</h3>
+    <p id="modernConfirmText">Are you sure?</p>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:18px;">
+      <button id="modernConfirmCancel" class="view-btn" type="button">Cancel</button>
+      <button id="modernConfirmOk" class="view-btn editor-delete-btn" type="button" style="margin-right:0;">Delete</button>
     </div>
   </div>
 </div>
@@ -3623,7 +3800,13 @@ function getCurrentUser() {
 }
 
 function getAuditName(record = {}) {
-  return record.updatedByName || record.updatedBy || record.modifiedBy || record.editedBy || record.createdByName || record.createdBy || record.ownerName || record.userName || record.email || getCurrentUser().name || "User";
+  return record.lastUpdatedBy || record.last_updated_by || record.updatedByName || record.updatedBy || record.modifiedBy || record.editedBy || record.createdByName || record.createdBy || record.ownerName || record.userName || record.email || getCurrentUser().name || "User";
+}
+
+function getAuditInfo(record = {}) {
+  const who = getAuditName(record);
+  const when = record.lastUpdatedAt || record.last_updated_at || record.updated_at || record.createdAt || record.created_at;
+  return when ? `${who}<br><small>${new Date(when).toLocaleString()}</small>` : who;
 }
 
 function authFetchOptions(options = {}) {
@@ -4128,7 +4311,7 @@ let lastRenderedSignature = null;
     // render records
     function renderRecords(records) {
 
-      const renderSignature = JSON.stringify((records || []).map(r => `${r.id || r.prNo || r.workName || ""}:${r.recordType || ""}:${r.subDivision || ""}`));
+      const renderSignature = JSON.stringify((records || []).map(r => `${r.id || r.prNo || r.workName || ""}:${r.recordType || ""}:${r.subDivision || ""}:${r.workName || ""}:${r.amount || ""}:${r.status || ""}:${r.pdfPath || ""}`));
       if (renderSignature === lastRenderedSignature) return;
       lastRenderedSignature = renderSignature;
 
@@ -4202,6 +4385,9 @@ let lastRenderedSignature = null;
 if (listEnabled) {
     container.style.display = "block";
     container.innerHTML = `
+        <div style="display:flex;justify-content:flex-end;margin:0 0 12px;">
+          <button class="view-btn" onclick="openCreateRecordBox(event)">➕ Create New Record</button>
+        </div>
         <table class="table-animate" style="
     width:100%;
     border:1px solid #ccc;
@@ -4266,23 +4452,13 @@ console.log("Index records[0]:", records[0]);
        <td style="padding:10px;border:1px solid #ddd;text-align:center;">
   ${statusBadge(r.status)}
 </td>
-            <td style="padding:10px;border:1px solid #ddd;text-align:center;">${getAuditName(r)}</td>
+            <td style="padding:10px;border:1px solid #ddd;text-align:center;">${getAuditInfo(r)}</td>
 
-            <!-- ⭐ VIEW PDF BUTTON ⭐ -->
             <td style="padding:10px;text-align:center;">
-                <button
-                    onclick='showPDF(${JSON.stringify(r).replace(/'/g,"&apos;")})'
-                    style="
-                        background:#007bff;
-                        color:white;
-                        border:none;
-                        padding:6px 12px;
-                        border-radius:6px;
-                        cursor:pointer;
-                        font-weight:bold;
-                    ">
-                    View PDF
-                </button>
+                <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
+                  <button onclick='showPDF(${JSON.stringify(r).replace(/'/g,"&apos;")})' style="background:#007bff;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-weight:bold;">View PDF</button>
+                  <button onclick='openEditRecordBox(event, ${JSON.stringify(r).replace(/'/g,"&apos;")})' style="background:#28a745;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-weight:bold;">Edit</button>
+                </div>
             </td>
         </tr>
     `).join("");
@@ -4321,7 +4497,7 @@ container.innerHTML = records.map((r, i) => {
           <p><strong>PR No:</strong> ${r.prNo || 'N/A'}</p>
           <p><strong>Sub Div:</strong> ${r.subDivision || 'N/A'}</p>
           <p><strong>Type:</strong> ${r.recordType || 'N/A'}</p>
-          <span class="audit-chip">👤 ${getAuditName(r)}</span>
+          <span class="audit-chip">👤 ${getAuditInfo(r)}</span>
         </div>
         <button class="view-btn" onclick="handlePDFClick(event, ${recordData})">
     View PDF
@@ -4509,6 +4685,9 @@ function renderEstimates(data) {
     container.style.display = "block";
 
     container.innerHTML = `
+    <div style="display:flex;justify-content:flex-end;margin:0 0 12px;">
+      <button class="view-btn" onclick="openCreateEstimateBox(event)">➕ Create New Estimate</button>
+    </div>
     <table class="table-animate estimate-table">
         <thead>
             <tr>
@@ -4540,9 +4719,12 @@ function renderEstimates(data) {
             <td style="text-align:center;">
   ${statusBadge(r.status)}
 </td>
-            <td>${getAuditName(r)}</td>
+            <td>${getAuditInfo(r)}</td>
             <td>
-                <button class="view-btn" onclick='showPDF(${JSON.stringify(r).replace(/'/g,"&apos;")})'>View PDF</button>
+                <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
+                  <button class="view-btn" onclick='showPDF(${JSON.stringify(r).replace(/'/g,"&apos;")})'>View PDF</button>
+                  <button class="view-btn" onclick='openEditEstimateBox(event, ${JSON.stringify(r).replace(/'/g,"&apos;")})'>Edit</button>
+                </div>
             </td>
         </tr>
     `).join("");
@@ -4566,7 +4748,7 @@ function renderEstimates(data) {
                 <p><strong>Division:</strong> ${r.division}</p>
                 <p><strong>Amount:</strong> ₹ ${(parseFloat(r.amount) || 0).toLocaleString('en-IN')}</p>
                 <p><strong>Status:</strong> ${statusBadge(r.status)}</p>
-                <span class="audit-chip">👤 ${getAuditName(r)}</span>
+                <span class="audit-chip">👤 ${getAuditInfo(r)}</span>
             </div>
 ${userRole !== "viewer" ? `
 <button onclick='openRemarks("${r.prNo}")'>📝</button>
@@ -4597,7 +4779,10 @@ function requireFileLogin(action) {
 
 async function uploadFile() {
   const files = [...fileInput.files];
-  if (!files.length) return alert("Select files");
+  if (!files.length) return alert("Select PDF files");
+  if (files.some(f => f.type !== "application/pdf" && !f.name.toLowerCase().endsWith(".pdf"))) {
+    return alert("Only PDF files can be uploaded to File Transfer.");
+  }
 
   const token = localStorage.getItem("adminToken");
   if (!token) {
@@ -4658,8 +4843,23 @@ let pendingDownloadUrl = null;
 
 function resolveFileUrl(url) {
   if (!url) return "";
-  if (/^https?:\/\//i.test(url) || url.startsWith("blob:")) return url;
+  if (url.startsWith("blob:")) return url;
+
   const base = (window.SERVER_URL || SERVER_URL || "").replace(/\/$/, "");
+
+  if (/^https?:\/\//i.test(url)) {
+    try {
+      const parsedUrl = new URL(url);
+      const parsedBase = new URL(base);
+      if (parsedUrl.host === parsedBase.host && parsedBase.protocol === "https:") {
+        parsedUrl.protocol = "https:";
+      }
+      return parsedUrl.toString();
+    } catch (e) {
+      return url.replace(/^http:\/\//i, "https://");
+    }
+  }
+
   return `${base}/${String(url).replace(/^\//, "")}`;
 }
 
@@ -4935,6 +5135,218 @@ function filterEstimates(div) {
     renderEstimates(filtered);
 }
 
+
+
+
+function modernConfirm({ title = "Confirm action", text = "Are you sure?", okText = "Delete" } = {}) {
+    return new Promise(resolve => {
+        const modal = document.getElementById("modernConfirmModal");
+        document.getElementById("modernConfirmTitle").textContent = title;
+        document.getElementById("modernConfirmText").textContent = text;
+        const ok = document.getElementById("modernConfirmOk");
+        const cancel = document.getElementById("modernConfirmCancel");
+        ok.textContent = okText;
+        modal.style.display = "flex";
+        const finish = value => { modal.style.display = "none"; ok.onclick = cancel.onclick = null; resolve(value); };
+        ok.onclick = () => finish(true);
+        cancel.onclick = () => finish(false);
+    });
+}
+
+async function authedDelete(url, label) {
+    const token = localStorage.getItem("adminToken") || localStorage.getItem("rememberToken");
+    if (!token) { openPasswordModal(); return false; }
+    const yes = await modernConfirm({ title: `Delete ${label}?`, text: `This will remove this ${label}. Please confirm before continuing.`, okText: "Yes, delete" });
+    if (!yes) return false;
+    const res = await fetch(url, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) { alert(`Failed to delete ${label}.`); return false; }
+    return true;
+}
+
+function buildDailyEditorTable(tableHTML = "") {
+    const tbody = document.querySelector("#dailyEditTable tbody");
+    if (!tbody) return;
+    tbody.innerHTML = tableHTML || "";
+    if (!tbody.children.length) addDailyEditorRow();
+    [...tbody.querySelectorAll("tr")].forEach(row => makeDailyRowEditable(row));
+}
+
+function makeDailyRowEditable(row) {
+    [...row.children].forEach((cell, index) => {
+        if (index < 7) cell.setAttribute("contenteditable", "true");
+    });
+    let action = row.children[7];
+    if (!action) action = row.insertCell(7);
+    action.removeAttribute("contenteditable");
+    action.innerHTML = `<button type="button" class="view-btn editor-delete-btn" onclick="this.closest('tr').remove()">Delete</button>`;
+}
+
+window.addDailyEditorRow = function() {
+    const tbody = document.querySelector("#dailyEditTable tbody");
+    if (!tbody) return;
+    const row = tbody.insertRow();
+    for (let i = 0; i < 8; i++) row.insertCell(i);
+    makeDailyRowEditable(row);
+};
+
+function collectDailyEditorTableHTML() {
+    const clone = document.querySelector("#dailyEditTable tbody")?.cloneNode(true);
+    if (!clone) return "";
+    clone.querySelectorAll("tr").forEach(row => {
+        while (row.children.length > 7) row.deleteCell(7);
+        [...row.children].forEach(cell => cell.removeAttribute("contenteditable"));
+    });
+    return clone.innerHTML;
+}
+
+function currentEditStamp() {
+    const user = getCurrentUser();
+    return `Last changed by ${user.name || user.email || "User"} on ${new Date().toLocaleString()}`;
+}
+
+function setEditorMeta(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text || currentEditStamp();
+}
+
+function setField(id, value = "") { const el = document.getElementById(id); if (el) el.value = value ?? ""; }
+
+function openEstimateEditor(record = {}) {
+    document.getElementById("estimateEditorTitle").textContent = record.id ? "Edit Estimate" : "Create New Estimate";
+    setField("estimateEditId", record.id || ""); setField("estimateEditDescription", record.description || record.workName || "");
+    setField("estimateEditDivision", record.division || record.divisionLabel || ""); setField("estimateEditPrNo", record.prNo || record.pr_no || "");
+    setField("estimateEditEstimateNo", record.estimateNo || record.estimate_no || ""); setField("estimateEditAmount", record.amount || record.grossAmount || record.netAmount || "");
+    setField("estimateEditStatus", record.status || "Pending"); setField("estimateEditSendTo", record.sendTo || ""); setField("estimateEditPoNo", record.poNo || record.po_no || "");
+    setEditorMeta("estimateEditorMeta", record.lastUpdatedBy ? `Last changed by ${record.lastUpdatedBy}` : currentEditStamp());
+    document.getElementById("estimateDeleteBtn").style.display = record.id ? "inline-block" : "none";
+    document.getElementById("estimateEditorModal").classList.add("active");
+}
+window.openEditEstimateBox = (event, record) => { event?.stopPropagation?.(); openEstimateEditor(record); };
+window.openCreateEstimateBox = (event) => { event?.stopPropagation?.(); openEstimateEditor({}); };
+window.closeEstimateEditor = () => document.getElementById("estimateEditorModal").classList.remove("active");
+document.getElementById("estimateEditorForm")?.addEventListener("submit", async event => {
+    event.preventDefault();
+    const token = localStorage.getItem("adminToken") || localStorage.getItem("rememberToken"); if (!token) return openPasswordModal();
+    const id = document.getElementById("estimateEditId").value;
+    const payload = Object.fromEntries(new FormData(event.target).entries()); delete payload.id;
+    payload.last_updated_by = getCurrentUser().name || getCurrentUser().email; payload.last_updated_at = new Date().toISOString();
+    const res = await fetch(`${SERVER_URL}/estimates${id ? `/${id}` : ""}`, { method: id ? "PUT" : "POST", headers: { "Content-Type":"application/json", Authorization:`Bearer ${token}` }, body: JSON.stringify(payload) });
+    if (!res.ok) return alert("Failed to save estimate.");
+    closeEstimateEditor(); await loadEstimates(); alert("Estimate saved successfully.");
+});
+
+function openDailyEditor(snapshot = {}) {
+    document.getElementById("dailyEditorTitle").textContent = snapshot.id ? "Edit Daily Progress" : "Create New Daily Progress";
+    setField("dailyEditId", snapshot.id || ""); setField("dailyEditDate", snapshot.date || new Date().toISOString().slice(0,10));
+    setField("dailyEditRowCount", snapshot.rowCount || 0); setField("dailyEditTableHTML", snapshot.tableHTML || ""); buildDailyEditorTable(snapshot.tableHTML || ""); setEditorMeta("dailyEditorMeta", currentEditStamp());
+    document.getElementById("dailyDeleteBtn").style.display = snapshot.id ? "inline-block" : "none";
+    document.getElementById("dailyEditorModal").classList.add("active");
+}
+window.openEditDailyBox = event => { event?.stopPropagation?.(); openDailyEditor(window.currentDailySnapshot || {}); };
+window.openCreateDailyBox = event => { event?.stopPropagation?.(); openDailyEditor({}); };
+window.closeDailyEditor = () => document.getElementById("dailyEditorModal").classList.remove("active");
+document.getElementById("dailyEditorForm")?.addEventListener("submit", async event => {
+    event.preventDefault(); const token = localStorage.getItem("adminToken") || localStorage.getItem("rememberToken"); if (!token) return openPasswordModal();
+    document.getElementById("dailyEditTableHTML").value = collectDailyEditorTableHTML();
+    const payload = Object.fromEntries(new FormData(event.target).entries());
+    payload.rowCount = document.querySelectorAll("#dailyEditTable tbody tr").length;
+    const res = await fetch(`${SERVER_URL}/daily-progress`, { method:"POST", headers:{ "Content-Type":"application/json", Authorization:`Bearer ${token}` }, body:JSON.stringify(payload) });
+    if (!res.ok) return alert("Failed to save daily progress."); closeDailyEditor(); await loadDailyProgressDates(); alert("Daily progress saved successfully.");
+});
+
+function openClEditor(c = {}) {
+    document.getElementById("clEditorTitle").textContent = c.id ? "Edit CL Bio Data" : "Create New CL Bio Data";
+    [["clEditId",c.id],["clEditName",c.name],["clEditGender",c.gender],["clEditAadhar",c.aadhar],["clEditPhone",c.phone],["clEditStation",c.station],["clEditDivision",c.division],["clEditDoj",c.doj],["clEditDob",c.dob],["clEditWages",c.wages],["clEditRelation",c.relation],["clEditNominee",c.nominee],["clEditPhotoUrl",c.photo_url]].forEach(([id,val])=>setField(id,val||""));
+    setField("clEditPhoto", ""); setEditorMeta("clEditorMeta", currentEditStamp()); document.getElementById("clDeleteBtn").style.display = c.id ? "inline-block" : "none"; document.getElementById("clEditorModal").classList.add("active");
+}
+window.openEditClBox = (event, c) => { event?.stopPropagation?.(); openClEditor(c); };
+window.openCreateClBox = event => { event?.stopPropagation?.(); openClEditor({}); };
+window.closeClEditor = () => document.getElementById("clEditorModal").classList.remove("active");
+document.getElementById("clEditorForm")?.addEventListener("submit", async event => {
+    event.preventDefault(); const token = localStorage.getItem("adminToken") || localStorage.getItem("rememberToken"); if (!token) return openPasswordModal();
+    const fd = new FormData(event.target); if (!document.getElementById("clEditPhoto")?.files?.[0]) fd.delete("photo");
+    const res = await fetch(`${SERVER_URL}/cl`, { method:"POST", headers:{ Authorization:`Bearer ${token}` }, body:fd });
+    if (!res.ok) return alert("Failed to save CL bio data."); closeClEditor(); await renderCLBioData(); alert("CL bio data saved successfully.");
+});
+
+
+window.deleteCurrentEstimate = async function() { const id = document.getElementById("estimateEditId").value; if (!id) return; if (await authedDelete(`${SERVER_URL}/estimates/${id}`, "estimate")) { closeEstimateEditor(); await loadEstimates(); } };
+window.deleteCurrentDaily = async function() { const id = document.getElementById("dailyEditId").value; if (!id) return; if (await authedDelete(`${SERVER_URL}/daily-progress/${id}`, "daily progress")) { closeDailyEditor(); await loadDailyProgressDates(); document.getElementById("inlineSnapshotFrame").innerHTML = "<p style='color:#555'>Please select a date from the list on the left.</p>"; } };
+window.deleteCurrentCl = async function() { const id = document.getElementById("clEditId").value; if (!id) return; if (await authedDelete(`${SERVER_URL}/cl/${id}`, "CL bio data")) { closeClEditor(); await renderCLBioData(); } };
+window.deleteCurrentRecord = async function() { const id = document.getElementById("recordEditId").value; if (!id) return; if (await authedDelete(`${SERVER_URL}/records/${id}`, "record")) { closeRecordEditor(); lastRenderedSignature = null; await loadRecords(); } };
+
+function setRecordEditorValue(id, value = "") {
+    const el = document.getElementById(id);
+    if (el) el.value = value ?? "";
+}
+
+function openRecordEditor(record = {}) {
+    document.getElementById("recordEditorTitle").textContent = record.id ? "Edit Record" : "Create New Record";
+    setRecordEditorValue("recordEditId", record.id || "");
+    setRecordEditorValue("recordEditWorkName", record.workName || "");
+    setRecordEditorValue("recordEditPrNo", record.prNo || "");
+    setRecordEditorValue("recordEditSubDivision", record.subDivision || record.divisionLabel || "");
+    setRecordEditorValue("recordEditRecordType", record.recordType || "PR");
+    setRecordEditorValue("recordEditAmount", record.amount || "");
+    setRecordEditorValue("recordEditSendTo", record.sendTo || "");
+    setRecordEditorValue("recordEditStatus", record.status || "Pending");
+    setRecordEditorValue("recordEditPrDate", record.prDate || "");
+    setRecordEditorValue("recordEditBudgetHead", record.budgetHead || "");
+    setRecordEditorValue("recordEditPoNo", record.poNo || "");
+    setRecordEditorValue("recordEditPdf", "");
+    document.getElementById("recordEditorModal").classList.add("active");
+}
+
+window.openEditRecordBox = function(event, record) {
+    event?.stopPropagation?.();
+    openRecordEditor(record);
+};
+
+window.openCreateRecordBox = function(event) {
+    event?.stopPropagation?.();
+    openRecordEditor({});
+};
+
+window.closeRecordEditor = function() {
+    document.getElementById("recordEditorModal").classList.remove("active");
+};
+
+document.getElementById("recordEditorForm")?.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const token = localStorage.getItem("adminToken") || localStorage.getItem("rememberToken");
+    if (!token) {
+        openPasswordModal();
+        return;
+    }
+
+    const fd = new FormData(event.target);
+    const pdfFile = document.getElementById("recordEditPdf")?.files?.[0];
+    if (pdfFile && pdfFile.type !== "application/pdf" && !pdfFile.name.toLowerCase().endsWith(".pdf")) {
+        alert("Only PDF files can be uploaded.");
+        return;
+    }
+    if (!pdfFile) fd.delete("pdfs");
+
+    try {
+        const res = await fetch(`${SERVER_URL}/upload`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+            body: fd
+        });
+        const result = await res.json().catch(() => ({}));
+        if (!res.ok || !result.success) throw new Error(result.error || "Record save failed");
+
+        closeRecordEditor();
+        lastRenderedSignature = null;
+        await loadRecords();
+        alert("Record saved successfully.");
+    } catch (err) {
+        console.error("Record editor save failed", err);
+        alert(err.message || "Failed to save record.");
+    }
+});
+
 window.openRecordDetails = function(event, record) {
     // Prevent clicks on buttons inside card/row
     if (event.target.closest("button")) return;
@@ -5194,15 +5606,12 @@ function toggleSearchBar() {
 
   let finalUrl;
 
-  // 👉 CASE 1: Supabase URL (starts with http)
-  if (pdfPath.startsWith("http")) {
-    finalUrl = pdfPath;
-  }
-  // 👉 CASE 2: File stored on backend
-  else {
+  if (pdfPath.startsWith("http") || pdfPath.startsWith("/files/")) {
+    finalUrl = resolveFileUrl(pdfPath);
+  } else {
     let path = pdfPath;
     if (!path.startsWith("/uploads/")) {
-      path = "/uploads/" + path.replace(/^uploads[\\/]/, "");
+      path = "/uploads/" + path.replace(/^uploads[\/]/, "");
     }
     finalUrl = `${SERVER_URL}${path}`;
   }
@@ -5211,9 +5620,7 @@ function toggleSearchBar() {
   modalPR.textContent = "PR No: " + (prNo || 'N/A');
 
   // Load PDF
- pdfFrame.src =
-  "https://docs.google.com/gview?embedded=1&url=" +
-  encodeURIComponent(finalUrl);
+ pdfFrame.src = finalUrl;
 
   productModal.classList.add('active');
   document.body.classList.add("modal-open");
@@ -5313,6 +5720,8 @@ fetch(`${SERVER_URL}/api/remarks`, {
         const res = await fetch(`${SERVER_URL}/daily-progress/${id}`);
         if(!res.ok) throw new Error('Snapshot not found');
         const snapshot = await res.json();
+        window.currentDailySnapshot = snapshot;
+        document.getElementById("inlineEditDailyBtn").style.display = "inline-block";
 
         const thead = `<tr>
           <th style="width:120px">Date</th><th style="width:120px">Division</th>
@@ -5469,6 +5878,7 @@ async function renderCLBioData() {
           <p><b>Nominee:</b> ${c.nominee} (${c.relation})</p>
 
         </div>
+        <button class="view-btn" onclick='openEditClBox(event, ${JSON.stringify(c).replace(/'/g,"&apos;")})'>Edit</button>
       </div>
     `;
   })
@@ -5738,6 +6148,15 @@ const previewList = document.getElementById("previewList");
 function showPreview() {
   const files = [...fileInput.files];
   if (!files.length) return;
+
+  const invalidFiles = files.filter(f => f.type !== "application/pdf" && !f.name.toLowerCase().endsWith(".pdf"));
+  if (invalidFiles.length) {
+    alert("Only PDF files can be uploaded to File Transfer.");
+    fileInput.value = "";
+    preview.style.display = "none";
+    previewList.innerHTML = "";
+    return;
+  }
 
   previewList.innerHTML = files.map(f => `
     <div style="
