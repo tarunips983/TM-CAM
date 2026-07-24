@@ -3228,6 +3228,26 @@ header, main, section, .container, .right-panel, #pdf-grid-wrapper { min-width: 
   .record-editor-form { grid-template-columns:1fr !important; }
 }
 
+
+/* Overall responsive polish and interaction fixes */
+.action-stack { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+.view-btn, .upload-btn, .subnav-btn { touch-action: manipulation; }
+.product, .cl-card, .details-box, .note-card { backdrop-filter: saturate(130%) blur(1px); }
+@media (max-width: 768px) {
+  main { background: linear-gradient(180deg,#eef5ff 0%,#f8fbff 55%,#ffffff 100%) !important; }
+  #pdf-grid-wrapper, #inlineRightBar, #estimates-right-panel { padding: 12px !important; }
+  .product-grid, #estimatesGrid, #clBioGrid { gap:18px !important; padding: 6px !important; }
+  .product img { object-fit: contain !important; background:#fff !important; border-radius:16px !important; }
+  .audit-chip { display:inline-flex !important; max-width:100% !important; overflow-wrap:anywhere !important; }
+  .dropdown-menu.active { display:flex !important; flex-direction:column !important; gap:8px !important; }
+  .dropdown-menu a { min-height:44px !important; display:flex !important; align-items:center !important; border-radius:12px !important; }
+  #productModal { padding:8px !important; }
+  #modalContent { width:100% !important; height: calc(100dvh - 24px) !important; border-radius:18px !important; }
+  #pdfFrame { min-height:60dvh !important; }
+  .right-bar-header { flex-direction:column !important; align-items:stretch !important; gap:10px !important; }
+  .right-bar-header > div { justify-content:flex-start !important; overflow-x:auto !important; padding-bottom:4px !important; }
+}
+
 </style>
 
 </head>
@@ -3258,7 +3278,7 @@ header, main, section, .container, .right-panel, #pdf-grid-wrapper { min-width: 
   inputmode="search"
 />
 </div>
-      <a href="javascript:void(0)" onclick="openPasswordModal()" title="Add New Record">➕ Add Record</a>
+      <a href="javascript:void(0)" onclick="openCreateRecordBox(event)" title="Create New Record">➕ Create Record</a>
       <span id="currentUserChip" class="user-chip" title="Logged in user">👤 User</span>
       <a href="login.html?redirect=index.html" id="loginLink" title="Login Page">🔐 Login</a>
       <button
@@ -5570,13 +5590,8 @@ function buildDynamicDivisionFilters() {
 }
 
 function openAddRecordFromDetails() {
-    // 1️⃣ Close record details modal
     document.getElementById("recordDetailsModal").classList.remove("active");
-
-    // 2️⃣ Small delay for smooth transition
-    setTimeout(() => {
-        openPasswordModal();
-    }, 150);
+    setTimeout(() => openCreateRecordBox(), 150);
 }
 
 
@@ -5978,6 +5993,7 @@ function startNewChat() {
   localStorage.removeItem("smartChatHistory");
   document.getElementById("aiChatMessages").innerHTML = "";
 }
+window.createNewChat = startNewChat;
 
 function logoutAI() {
   localStorage.clear();
