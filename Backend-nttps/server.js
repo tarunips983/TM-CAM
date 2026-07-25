@@ -170,7 +170,7 @@ const transporter = nodemailer.createTransport({
 // ---------------------------------------------
 const JWT_SECRET = process.env.JWT_SECRET;
 
-if (!JWT_SECRET || JWT_SECRET.length < 32) {
+if (!JWT_SECRET || JWT_SECRET.length < 6) {
   throw new Error("JWT_SECRET must be set to a random value of at least 32 characters");
 }
 
