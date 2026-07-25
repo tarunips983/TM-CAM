@@ -164,7 +164,13 @@ const transporter = nodemailer.createTransport({
   secure: true,
   auth: { user: EMAIL_USER, pass: EMAIL_PASS },
 });
-
+transporter.verify((err, success) => {
+    if (err) {
+        console.error("SMTP Verify Error:", err);
+    } else {
+        console.log("SMTP Connected");
+    }
+});
 // ---------------------------------------------
 // AUTHENTICATION MIDDLEWARE (same JWT logic)
 // ---------------------------------------------
